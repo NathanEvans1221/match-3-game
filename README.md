@@ -4,6 +4,8 @@
 
 ![Match-3](./images/Match-3.png)
 
+DEMO: https://match-3-game.liawchiisen.workers.dev/
+
 ## 🎮 遊戲特點
 - **雙角色主題**：結合可愛貓咪（波弟）與可愛小女生（波妞）的精美關聯圖示（貓臉、肉球 🐾、毛線球等）。
 - **雙模式選擇**：
