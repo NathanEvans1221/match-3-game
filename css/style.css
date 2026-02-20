@@ -212,26 +212,31 @@ body {
     touch-action: none;
 }
 
-/* ---------- 開心跳躍動畫元素 ---------- */
+/* ---------- 慶祝影片區 ---------- */
+.video-wrapper {
+    width: 100%;
+    margin-top: 4px;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    background: var(--bg-card);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 #cheer-video {
-    position: absolute;
-    bottom: 0px;
-    right: 0px;
-    width: 130px;
+    width: 100%;
     height: auto;
-    z-index: 5;
-    pointer-events: none;
-    /* 避免干擾點擊 */
-    border-radius: 20px 0 0 0;
-    box-shadow: -2px -2px 10px rgba(0, 0, 0, 0.4);
-    opacity: 0.8;
-    transition: transform 0.3s ease, opacity 0.3s ease;
+    display: block;
+    opacity: 0.85;
+    transition: opacity 0.3s ease, filter 0.3s ease, transform 0.3s ease;
 }
 
 #cheer-video.cheer-active {
     opacity: 1;
-    transform: scale(1.1);
-    transform-origin: bottom right;
+    filter: brightness(1.1);
 }
 
 /* ---------- 遊戲結束覆蓋層 ---------- */
@@ -507,5 +512,10 @@ body {
         min-height: 36px;
         font-size: 0.78rem;
         white-space: nowrap;
+    }
+
+    .video-wrapper {
+        width: 150px;
+        margin-top: 0;
     }
 }
