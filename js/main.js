@@ -26,7 +26,7 @@ function init() {
     const btnRestart = document.getElementById('btn-restart');
     const btnRestartOverlay = document.getElementById('btn-restart-overlay');
     const btnSound = document.getElementById('btn-sound');
-
+    const cheerVideo = document.getElementById('cheer-video');
     // 初始化渲染器
     const renderer = new Renderer(canvas);
 
@@ -50,6 +50,38 @@ function init() {
     // 當前遊戲模式
     let currentMode = 'classic';
 
+    // 影片播放邏輯： 1~3秒 'normal' 循環，3~8秒 'cheer' 播放
+    let cheerState = 'normal';
+    if (cheerVideo) {
+        cheerVideo.currentTime = 1;
+        cheerVideo.play().catch((e) => console.warn('Video autoplay blocked:', e));
+
+        cheerVideo.addEventListener('timeupdate', () => {
+            if (cheerState === 'normal') {
+                if (cheerVideo.currentTime >= 3) {
+                    cheerVideo.currentTime = 1;
+                }
+            } else if (cheerState === 'cheer') {
+                if (cheerVideo.currentTime >= 8 || cheerVideo.currentTime < 3) {
+                    // 如果播到 8s，或是因為某些原因時間跳掉
+                    cheerState = 'normal';
+                    cheerVideo.currentTime = 1;
+                    cheerVideo.classList.remove('cheer-active');
+                }
+            }
+        });
+    }
+
+    const triggerCheerAnimation = () => {
+        if (!cheerVideo) return;
+
+        if (cheerState === 'normal') {
+            cheerState = 'cheer';
+            cheerVideo.currentTime = 3;
+            cheerVideo.classList.add('cheer-active');
+        }
+    };
+
     // 初始化遊戲控制器
     const game = new Game({
         onScoreUpdate: (points, reset) => {
@@ -57,7 +89,10 @@ function init() {
         },
         onComboUpdate: (combo) => {
             scoreManager.updateCombo(combo);
-            if (combo > 0) audioManager.playMatch(combo);
+            if (combo > 0) {
+                audioManager.playMatch(combo);
+                triggerCheerAnimation(); // 每次產生連鎖/消除時跳起
+            }
         },
         onTimerUpdate: (seconds) => {
             if (timerEl) timerEl.textContent = seconds;

@@ -3,7 +3,7 @@
 本文件依照 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 格式撰寫。
 
 ## [Unreleased]
-
+- **動畫更新** (`index.html`, `css/style.css`, `js/main.js`)：將慶祝時的靜態圖片 (`cheer.jpg`) 替換為循環播放的動態影片 (`cheer.mp4`)。現在影片會平時維持 1~3 秒的播放循環，當玩家觸發消除連鎖時，則無縫接軌播放 3~8 秒的慶祝片段，呈現更豐富的視覺反饋。
 ## [0.2.0] - 2026-02-20
 
 ### 新增與變更

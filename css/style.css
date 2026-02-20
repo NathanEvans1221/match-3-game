@@ -212,6 +212,28 @@ body {
     touch-action: none;
 }
 
+/* ---------- 開心跳躍動畫元素 ---------- */
+#cheer-video {
+    position: absolute;
+    bottom: 0px;
+    right: 0px;
+    width: 130px;
+    height: auto;
+    z-index: 5;
+    pointer-events: none;
+    /* 避免干擾點擊 */
+    border-radius: 20px 0 0 0;
+    box-shadow: -2px -2px 10px rgba(0, 0, 0, 0.4);
+    opacity: 0.8;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+#cheer-video.cheer-active {
+    opacity: 1;
+    transform: scale(1.1);
+    transform-origin: bottom right;
+}
+
 /* ---------- 遊戲結束覆蓋層 ---------- */
 .overlay {
     position: absolute;
