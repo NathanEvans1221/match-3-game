@@ -53,9 +53,6 @@ function init() {
     // 影片播放邏輯： 1~3秒 'normal' 循環，3~8秒 'cheer' 播放
     let cheerState = 'normal';
     if (cheerVideo) {
-        cheerVideo.currentTime = 1;
-        cheerVideo.play().catch((e) => console.warn('Video autoplay blocked:', e));
-
         cheerVideo.addEventListener('timeupdate', () => {
             if (cheerState === 'normal') {
                 if (cheerVideo.currentTime >= 2.7) {
@@ -176,18 +173,30 @@ function init() {
         renderer.resize();
     });
 
-    // 點擊頁面任何地方先初始化音效 (解決瀏覽器自動播放限制)
+    // 點擊頁面任何地方先初始化音效與影片 (解決瀏覽器自動播放限制)
     const unlockAudio = () => {
-        if (audioManager.init(true)) {
-            audioManager.startBGM(); // 解鎖後立即啟動背景音樂
-            // 移除所有解鎖監聽器
-            ['touchstart', 'mousedown', 'click'].forEach(evt =>
-                document.removeEventListener(evt, unlockAudio)
-            );
+        // 使用 force=true 嘗試解鎖
+        audioManager.init(true);
+
+        // 延遲一下檢查是否成功（因為 resume 是異步的），或者乾脆直接嘗試啟動音樂
+        // 即使 init() 暫時回傳 false，如果在觸發事件內呼叫了 resume，後續播放就會生效
+        audioManager.startBGM();
+
+        // 同時嘗試解鎖影片播放
+        if (cheerVideo) {
+            cheerVideo.currentTime = 1;
+            cheerVideo.play().catch(() => { });
         }
+
+        // 移除所有解鎖監聽器
+        ['touchstart', 'mousedown'].forEach(evt =>
+            window.removeEventListener(evt, unlockAudio, true)
+        );
     };
-    ['touchstart', 'mousedown', 'click'].forEach(evt =>
-        document.addEventListener(evt, unlockAudio)
+
+    // 使用 capture: true 確保在 Canvas 的 InputHandler 執行前就先觸發音訊解鎖
+    ['touchstart', 'mousedown'].forEach(evt =>
+        window.addEventListener(evt, unlockAudio, { capture: true, once: false })
     );
 
     // 手機旋轉（延遲確保 innerWidth/innerHeight 已更新）

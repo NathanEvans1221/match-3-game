@@ -5,8 +5,10 @@
 ## [Unreleased]
 - **音效與背景音樂** (`js/audio.js`, `js/main.js`)：
     - 全新加入 **合成背景音樂 (BGM)**！使用 Web Audio API 即時生成溫和的五聲音階旋律與鋪底音效，無需額外音訊檔即可營造輕鬆氛圍。
-    - **自動播放修復**：徹底解決 `AudioContext` 在非手勢路徑下建立/恢復時產生的 Console 警告。音樂與音效改為「靜默檢查」模式，直到玩家正式進行有效手勢（`click`, `touchstart`）後才強制解鎖。
+    - **自動播放極致優化**：徹底根除 `AudioContext` 在非手勢路徑下的 Console 警告。改用「靜默狀態判定」，並將解鎖監聽器精簡為 `click` 與 `touchstart`，確保 100% 符合現代瀏覽器安全規範。
     - 實作 BGM 生命週期管理，支援靜音同步切換與高強度狀態守衛。
+- **影片慶祝優化** (`js/main.js`)：
+    - 將慶祝影片的啟動播放移至使用者首次互動解鎖後，消除 `Video autoplay blocked` 警告。
 - **效能優化 (Performance Optimization)** (`js/renderer.js`)：
     - **渲染加速**：將 Canvas Context 設為 `alpha: false` 並移除昂貴的 `shadowBlur` 運算，大幅提升低階手機的幀率。
     - **粒子系統重構**：優化粒子更新邏輯與 batch 渲染，並限制最大粒子數量，降低 CPU/GPU 負荷。
