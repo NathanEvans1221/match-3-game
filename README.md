@@ -10,7 +10,8 @@
 - **手機優化**：
   - 支援觸控滑動 (Swipe) 手勢直接交換方塊。
   - 響應式佈局，自動填滿螢幕空間。
-- **動感音效**：內建 Web Audio API 合成音效，隨連鎖次數提高音調，增強遊戲回饋感。
+- **動態音效**：內建 Web Audio API 合成音效，隨連鎖次數提高音調，增強遊戲回饋感。
+- **互動影片慶祝**：畫面下方包含動態貓咪慶祝影片，平時維持待機循環，消除成功時則自動跳轉至高潮片段。
 
 ## 🛠 技術棧
 - **核心**: Vanilla JavaScript (ES Modules)
@@ -27,6 +28,12 @@
 - **放大補償**：因圖片素材自帶透明邊界，在 `_drawGem` 時額外實施 `1.4x` 或 `1.05x` 的繪製放大，並移除 Canvas 裁切限制，使視覺效果達到最飽滿的狀態。
 - **CSS 移除硬性限制**：放寬 `.game-container` 的 `max-width` 限制，並將容器設為 `fit-content` 以避免外框溢出。
 
+### 2. 慶祝動畫與效能平衡
+**問題描述**：原本採用 `jumpCheer` 圖片動畫雖然簡單，但視覺衝擊力不足，且覆蓋在棋盤上會干擾玩家操作。
+**解決方案**：
+- **影片區段控制**：改用 `cheer.mp4` 影片，透過 JS 監聽 `timeupdate` 實作狀態機。平時在 1s~3s 循環，三消觸發後瞬間跳至 3s 播放至 8s。
+- **獨立佈局區塊**：將影片從棋盤內部移至控制按鈕區下方的獨立 `.video-wrapper` 區域，解決遮擋問題並使整體視覺更飽滿。
+
 ## 🚀 快速開始
 1. 確保電腦已安裝 [Node.js](https://nodejs.org/)。
 2. 使用 VS Code 的 [Live Server](https://marketplace.visualstudio.com/items?itemName=ritwickdey.LiveServer) 或以下指令開啟本機服務：
@@ -41,4 +48,4 @@
    ```
 
 ---
-*Created by [chiisen](https://github.com/chiisen) — v0.2.0*
+*Created by [chiisen](https://github.com/chiisen) — v0.2.1*

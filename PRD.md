@@ -93,7 +93,8 @@ match-3-game/
 │   ├── score.js        # 計分與最高分管理
 │   └── audio.js        # 音效管理（可選）
 ├── assets/
-│   └── images/         # 寶石圖片素材
+│   ├── images/         # 寶石圖片素材
+│   └── videos/         # 互動慶祝影片素材 (cheer.mp4)
 ├── PRD.md
 ├── README.md
 └── LICENSE
@@ -156,3 +157,4 @@ stateDiagram-v2
 - [x] 響應式設計
 - [x] 觸控支援 (滑動 swipe)
 - [x] 音效（Web Audio API）
+- [x] 動態影片慶祝動畫 (區段循環控制)
