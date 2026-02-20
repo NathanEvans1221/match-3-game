@@ -133,6 +133,9 @@ function init() {
         if (timerContainer) {
             timerContainer.style.display = mode === 'timed' ? 'flex' : 'none';
         }
+
+        // 啟動背景音樂 (需使用者互動後)
+        audioManager.startBGM();
     }
 
     // --- 綁定 UI 按鈕事件 ---
@@ -175,6 +178,10 @@ function init() {
     window.addEventListener('resize', () => {
         renderer.resize();
     });
+
+    // 點擊頁面任何地方先初始化音效 (解決瀏覽器自動播放限制)
+    document.addEventListener('touchstart', () => audioManager.init(), { once: true });
+    document.addEventListener('mousedown', () => audioManager.init(), { once: true });
 
     // 手機旋轉（延遲確保 innerWidth/innerHeight 已更新）
     window.addEventListener('orientationchange', () => {

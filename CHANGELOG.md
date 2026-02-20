@@ -3,6 +3,12 @@
 本文件依照 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 格式撰寫。
 
 ## [Unreleased]
+- **音效與背景音樂** (`js/audio.js`, `js/main.js`)：
+    - 全新加入 **合成背景音樂 (BGM)**！使用 Web Audio API 即時生成溫和的五聲音階旋律與鋪底音效，無需額外音訊檔即可營造輕鬆氛圍。
+    - 實作 BGM 生命週期管理，支援靜音同步切換與瀏覽器自動播放解鎖。
+- **效能優化 (Performance Optimization)** (`js/renderer.js`)：
+    - **渲染加速**：將 Canvas Context 設為 `alpha: false` 並移除昂貴的 `shadowBlur` 運算，大幅提升低階手機的幀率。
+    - **粒子系統重構**：優化粒子更新邏輯與 batch 渲染，並限制最大粒子數量，降低 CPU/GPU 負荷。
 - **介面配置優化** (`index.html`, `css/style.css`)：
     - 將模式選擇按鈕與遊戲標題 (`Match-3`) 整合至同一水平行。標題置中，兩側分別為「經典模式」與「計時模式」按鈕。
     - 大幅強化按鈕視覺：加大尺寸至 `52px` 高度，並將「計時模式」字體顏色統一為 `accent-cyan`（亮青色），確保兩側對稱且清晰。

@@ -12,6 +12,8 @@ export class AudioManager {
         this.muted = savedMute === 'true';
 
         this.masterVolume = 0.3; // 整體音量
+        this.bgmNode = null;
+        this.bgmGain = null;
     }
 
     /** 初始化 AudioContext (需在使用者互動後呼叫) */
@@ -19,12 +21,97 @@ export class AudioManager {
         if (!this.audioContext) {
             this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
         }
+        if (this.audioContext.state === 'suspended') {
+            this.audioContext.resume();
+        }
+    }
+
+    /** 開始播放背景音樂 (簡易合成旋律) */
+    startBGM() {
+        if (this.muted) return;
+        this.init();
+        if (this.bgmNode) return; // 避免重複播放
+
+        // 使用溫和的鋪底音樂 (Pad)
+        const oscillator = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(110, this.audioContext.currentTime); // A2 低音
+
+        gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+        gainNode.gain.linearRampToValueAtTime(this.masterVolume * 0.15, this.audioContext.currentTime + 3);
+
+        oscillator.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+
+        oscillator.start();
+        this.bgmNode = oscillator;
+        this.bgmGain = gainNode;
+
+        // 啟動循環旋律
+        this._playMelody();
+    }
+
+    _playMelody() {
+        if (this.muted || !this.audioContext || !this.bgmNode) return;
+
+        const notes = [261.63, 293.66, 329.63, 392.00, 440.00, 392.00, 329.63, 293.66]; // Pentatonic cycle
+        let index = 0;
+
+        const playNext = () => {
+            if (this.muted || !this.bgmNode || !this.audioContext) return;
+
+            const freq = notes[index];
+            const osc = this.audioContext.createOscillator();
+            const g = this.audioContext.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, this.audioContext.currentTime);
+
+            g.gain.setValueAtTime(0, this.audioContext.currentTime);
+            g.gain.linearRampToValueAtTime(this.masterVolume * 0.08, this.audioContext.currentTime + 0.1);
+            g.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 2.0);
+
+            osc.connect(g);
+            g.connect(this.audioContext.destination);
+
+            osc.start();
+            osc.stop(this.audioContext.currentTime + 2.0);
+
+            index = (index + 1) % notes.length;
+            this.melodyTimeout = setTimeout(playNext, 1500);
+        };
+
+        playNext();
+    }
+
+    /** 停止播放背景音樂 */
+    stopBGM() {
+        if (this.bgmNode) {
+            this.bgmGain.gain.linearRampToValueAtTime(0, this.audioContext.currentTime + 1);
+            setTimeout(() => {
+                if (this.bgmNode) {
+                    this.bgmNode.stop();
+                    this.bgmNode = null;
+                }
+            }, 1000);
+        }
+        if (this.melodyTimeout) {
+            clearTimeout(this.melodyTimeout);
+            this.melodyTimeout = null;
+        }
     }
 
     /** 切換靜音狀態 */
     toggleMute() {
         this.muted = !this.muted;
         localStorage.setItem('match3_mute', this.muted);
+        if (this.muted) {
+            this.stopBGM();
+        } else {
+            this.startBGM();
+        }
         return this.muted;
     }
 
