@@ -76,26 +76,18 @@ export class Renderer {
         this._calcDimensions();
     }
 
-    /** 計算尺寸：同時考慮寬度與高度，取較小值 */
+    /** 計算尺寸：以螢幕寬度為主要依據，讓棋盤填滿水平空間 */
     _calcDimensions() {
-        const sidePad = 20; // 左右 padding
-        const maxByWidth = Math.min(window.innerWidth - sidePad * 2, 480);
-
-        // 估算 UI 其他元素佔用的垂直空間（標題+計分板+按鈕+gap）
-        // 手機直向：約佔 180px；橫向下由 CSS flex 處理，此處取保守值
-        const uiHeight = window.innerHeight < 600 ? 140 : 180;
-        const availH = window.innerHeight - uiHeight;
-        const maxByHeight = Math.max(availH, 200); // 最小保留 200px
-
-        const maxSize = Math.min(maxByWidth, maxByHeight);
+        const sidePad = 10;
+        // 直接以螢幕寬度決定棋盤大小，不再被高度壓縮
+        const maxSize = Math.min(window.innerWidth - sidePad * 2, 800);
         this.cellSize = Math.floor(maxSize / this.boardSize);
-        this.padding = 4;
-        this.gemSize = this.cellSize - this.padding * 2;
+        this.padding = 0;
+        this.gemSize = this.cellSize;
 
         const canvasSize = this.cellSize * this.boardSize;
         this.canvas.width = canvasSize;
         this.canvas.height = canvasSize;
-        // CSS 讓 canvas 跟容器等寬，但保留 aspect-ratio
         this.canvas.style.width = canvasSize + 'px';
         this.canvas.style.height = canvasSize + 'px';
     }
@@ -287,10 +279,13 @@ export class Renderer {
         ctx.quadraticCurveTo(px, py, px + r, py);
         ctx.closePath();
 
-        ctx.clip(); // 裁切圖片邊緣
+        ctx.clip(); // 裁切圖片邊緣，保持圓角效果
 
-        // 繪製圖片
-        ctx.drawImage(img, px, py, size, size);
+        // 微幅放大 5% 消除圖片自帶的透明邊距
+        const zoom = 1.05;
+        const drawSize = size * zoom;
+        const offset = (drawSize - size) / 2;
+        ctx.drawImage(img, px - offset, py - offset, drawSize, drawSize);
 
         ctx.restore();
     }

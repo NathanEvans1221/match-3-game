@@ -7,6 +7,7 @@ import { Game, GameState } from './game.js';
 import { Renderer } from './renderer.js';
 import { InputHandler } from './input.js';
 import { ScoreManager } from './score.js';
+import { AudioManager } from './audio.js';
 
 /** 遊戲初始化 */
 function init() {
@@ -24,12 +25,27 @@ function init() {
     const btnHint = document.getElementById('btn-hint');
     const btnRestart = document.getElementById('btn-restart');
     const btnRestartOverlay = document.getElementById('btn-restart-overlay');
+    const btnSound = document.getElementById('btn-sound');
 
     // 初始化渲染器
     const renderer = new Renderer(canvas);
 
     // 初始化計分管理器
     const scoreManager = new ScoreManager(scoreEl, highScoreEl, comboEl);
+
+    // 初始化音效管理器
+    const audioManager = new AudioManager();
+    const updateSoundBtn = () => {
+        if (btnSound) {
+            btnSound.innerHTML = audioManager.muted ? '🔇 音效: 關' : '🔊 音效: 開';
+            if (audioManager.muted) {
+                btnSound.classList.remove('active');
+            } else {
+                btnSound.classList.add('active');
+            }
+        }
+    };
+    updateSoundBtn();
 
     // 當前遊戲模式
     let currentMode = 'classic';
@@ -41,16 +57,22 @@ function init() {
         },
         onComboUpdate: (combo) => {
             scoreManager.updateCombo(combo);
+            if (combo > 0) audioManager.playMatch(combo);
         },
         onTimerUpdate: (seconds) => {
             if (timerEl) timerEl.textContent = seconds;
         },
         onGameOver: () => {
+            audioManager.playGameOver();
             if (finalScoreEl) finalScoreEl.textContent = scoreManager.getScore();
             if (gameOverOverlay) gameOverOverlay.style.display = 'flex';
         },
-        onStateChange: (_state) => {
-            // 可用於除錯
+        onStateChange: (state) => {
+            if (state === GameState.SWAPPING) {
+                audioManager.playSwap();
+            } else if (state === GameState.FALLING && game.fallAnim && game.fallAnim.moves.length > 0) {
+                audioManager.playFall();
+            }
         },
     });
 
@@ -105,6 +127,13 @@ function init() {
 
     btnRestartOverlay?.addEventListener('click', () => {
         startGame(currentMode);
+    });
+
+    // 音效開關按鈕
+    btnSound?.addEventListener('click', () => {
+        audioManager.toggleMute();
+        updateSoundBtn();
+        audioManager.init(); // 確保使用者互動後立即解鎖 AudioContext
     });
 
     // 視窗大小變更（桌面縮放）

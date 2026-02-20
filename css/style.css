@@ -86,7 +86,7 @@ body {
     /* 使用 CSS var 動態注入，由 JS 控制間距 */
     gap: 10px;
     padding: 12px 12px;
-    max-width: 560px;
+    max-width: 800px;
     width: 100%;
     margin: 0 auto;
 }
@@ -194,16 +194,13 @@ body {
         0 0 80px rgba(255, 0, 229, 0.05),
         0 10px 40px rgba(0, 0, 0, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.08);
-    /* 讓寬度跟著容器 */
-    width: 100%;
-    align-self: stretch;
+    /* 讓外框剛好包住 Canvas，不多不少，消除右側空白 */
+    width: fit-content;
+    max-width: 100%;
 }
 
 #game-canvas {
     display: block;
-    /* 寬度填滿容器，高度由 JS 設定 */
-    width: 100%;
-    height: auto;
     cursor: pointer;
     background: var(--bg-secondary);
     /* 防止 iOS 觸控選取 */
