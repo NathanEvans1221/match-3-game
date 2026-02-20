@@ -65,6 +65,14 @@ export class Renderer {
         this.particles = [];
         this.hintPhase = 0; // 提示閃爍相位
 
+        // 載入貓咪主題圖片
+        this.gemImages = [];
+        for (let i = 1; i <= 6; i++) {
+            const img = new Image();
+            img.src = `assets/images/gem${i}.png`;
+            this.gemImages[i] = img;
+        }
+
         this._calcDimensions();
     }
 
@@ -249,164 +257,42 @@ export class Renderer {
      * @param {number} radius 半徑
      */
     _drawGem(ctx, type, x, y, radius) {
-        const colors = GEM_COLORS[type];
-        if (!colors) return;
+        const img = this.gemImages[type];
+        if (!img || !img.complete) return;
+
+        const size = radius * 2;
 
         ctx.save();
 
-        // 外發光
-        ctx.shadowColor = colors.glow;
-        ctx.shadowBlur = 12;
-
-        // 根據類型繪製不同形狀
-        switch (type) {
-            case 1: this._drawCircleGem(ctx, x, y, radius, colors); break;
-            case 2: this._drawDiamondGem(ctx, x, y, radius, colors); break;
-            case 3: this._drawSquareGem(ctx, x, y, radius, colors); break;
-            case 4: this._drawTriangleGem(ctx, x, y, radius, colors); break;
-            case 5: this._drawStarGem(ctx, x, y, radius, colors); break;
-            case 6: this._drawHexGem(ctx, x, y, radius, colors); break;
+        // 外發光與選取特效
+        const colors = GEM_COLORS[type];
+        if (colors) {
+            ctx.shadowColor = colors.glow;
+            ctx.shadowBlur = 10;
         }
+
+        // 建立圓角遮罩讓圖片變成可愛的拼圖方塊
+        ctx.beginPath();
+        const r = 12; // 圓角半徑
+        const px = x - size / 2;
+        const py = y - size / 2;
+        ctx.moveTo(px + r, py);
+        ctx.lineTo(px + size - r, py);
+        ctx.quadraticCurveTo(px + size, py, px + size, py + r);
+        ctx.lineTo(px + size, py + size - r);
+        ctx.quadraticCurveTo(px + size, py + size, px + size - r, py + size);
+        ctx.lineTo(px + r, py + size);
+        ctx.quadraticCurveTo(px, py + size, px, py + size - r);
+        ctx.lineTo(px, py + r);
+        ctx.quadraticCurveTo(px, py, px + r, py);
+        ctx.closePath();
+
+        ctx.clip(); // 裁切圖片邊緣
+
+        // 繪製圖片
+        ctx.drawImage(img, px, py, size, size);
 
         ctx.restore();
-    }
-
-    /** 圓形寶石 */
-    _drawCircleGem(ctx, x, y, r, colors) {
-        const grad = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r);
-        grad.addColorStop(0, colors.light);
-        grad.addColorStop(0.7, colors.main);
-        grad.addColorStop(1, colors.dark);
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(x, y, r * 0.85, 0, Math.PI * 2);
-        ctx.fill();
-
-        // 光澤
-        ctx.fillStyle = 'rgba(255,255,255,0.25)';
-        ctx.beginPath();
-        ctx.ellipse(x - r * 0.15, y - r * 0.25, r * 0.3, r * 0.2, -0.3, 0, Math.PI * 2);
-        ctx.fill();
-    }
-
-    /** 菱形寶石 */
-    _drawDiamondGem(ctx, x, y, r, colors) {
-        const grad = ctx.createLinearGradient(x - r, y, x + r, y);
-        grad.addColorStop(0, colors.dark);
-        grad.addColorStop(0.4, colors.light);
-        grad.addColorStop(1, colors.main);
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.moveTo(x, y - r * 0.9);
-        ctx.lineTo(x + r * 0.7, y);
-        ctx.lineTo(x, y + r * 0.9);
-        ctx.lineTo(x - r * 0.7, y);
-        ctx.closePath();
-        ctx.fill();
-
-        // 光澤
-        ctx.fillStyle = 'rgba(255,255,255,0.2)';
-        ctx.beginPath();
-        ctx.moveTo(x, y - r * 0.75);
-        ctx.lineTo(x + r * 0.2, y - r * 0.15);
-        ctx.lineTo(x - r * 0.2, y - r * 0.15);
-        ctx.closePath();
-        ctx.fill();
-    }
-
-    /** 方形寶石 (圓角) */
-    _drawSquareGem(ctx, x, y, r, colors) {
-        const size = r * 0.75;
-        const radius = r * 0.15;
-        const grad = ctx.createLinearGradient(x - size, y - size, x + size, y + size);
-        grad.addColorStop(0, colors.light);
-        grad.addColorStop(0.5, colors.main);
-        grad.addColorStop(1, colors.dark);
-        ctx.fillStyle = grad;
-        this._roundRect(ctx, x - size, y - size, size * 2, size * 2, radius);
-        ctx.fill();
-
-        // 光澤
-        ctx.fillStyle = 'rgba(255,255,255,0.2)';
-        this._roundRect(ctx, x - size + 3, y - size + 3, size * 0.8, size * 0.5, radius * 0.5);
-        ctx.fill();
-    }
-
-    /** 三角形寶石 */
-    _drawTriangleGem(ctx, x, y, r, colors) {
-        const grad = ctx.createLinearGradient(x, y - r, x, y + r);
-        grad.addColorStop(0, colors.light);
-        grad.addColorStop(1, colors.dark);
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.moveTo(x, y - r * 0.85);
-        ctx.lineTo(x + r * 0.8, y + r * 0.65);
-        ctx.lineTo(x - r * 0.8, y + r * 0.65);
-        ctx.closePath();
-        ctx.fill();
-
-        // 光澤
-        ctx.fillStyle = 'rgba(255,255,255,0.2)';
-        ctx.beginPath();
-        ctx.moveTo(x, y - r * 0.55);
-        ctx.lineTo(x + r * 0.2, y - r * 0.1);
-        ctx.lineTo(x - r * 0.2, y - r * 0.1);
-        ctx.closePath();
-        ctx.fill();
-    }
-
-    /** 星形寶石 */
-    _drawStarGem(ctx, x, y, r, colors) {
-        const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
-        grad.addColorStop(0, colors.light);
-        grad.addColorStop(0.6, colors.main);
-        grad.addColorStop(1, colors.dark);
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        const spikes = 5;
-        const outerR = r * 0.85;
-        const innerR = r * 0.4;
-        for (let i = 0; i < spikes * 2; i++) {
-            const angle = (i * Math.PI) / spikes - Math.PI / 2;
-            const rad = i % 2 === 0 ? outerR : innerR;
-            const px = x + Math.cos(angle) * rad;
-            const py = y + Math.sin(angle) * rad;
-            if (i === 0) ctx.moveTo(px, py);
-            else ctx.lineTo(px, py);
-        }
-        ctx.closePath();
-        ctx.fill();
-
-        // 中心光點
-        ctx.fillStyle = 'rgba(255,255,255,0.35)';
-        ctx.beginPath();
-        ctx.arc(x, y, r * 0.15, 0, Math.PI * 2);
-        ctx.fill();
-    }
-
-    /** 六邊形寶石 */
-    _drawHexGem(ctx, x, y, r, colors) {
-        const grad = ctx.createRadialGradient(x - r * 0.2, y - r * 0.2, 0, x, y, r);
-        grad.addColorStop(0, colors.light);
-        grad.addColorStop(0.6, colors.main);
-        grad.addColorStop(1, colors.dark);
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        for (let i = 0; i < 6; i++) {
-            const angle = (Math.PI / 3) * i - Math.PI / 6;
-            const px = x + Math.cos(angle) * r * 0.8;
-            const py = y + Math.sin(angle) * r * 0.8;
-            if (i === 0) ctx.moveTo(px, py);
-            else ctx.lineTo(px, py);
-        }
-        ctx.closePath();
-        ctx.fill();
-
-        // 光澤
-        ctx.fillStyle = 'rgba(255,255,255,0.2)';
-        ctx.beginPath();
-        ctx.ellipse(x - r * 0.1, y - r * 0.2, r * 0.25, r * 0.18, -0.3, 0, Math.PI * 2);
-        ctx.fill();
     }
 
     /** 繪製圓角矩形 */
