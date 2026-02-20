@@ -7,7 +7,7 @@
 export const GEM_TYPES = 6;
 
 /** 棋盤尺寸 */
-export const BOARD_SIZE = 8;
+export const BOARD_SIZE = 7;
 
 /** 遊戲狀態列舉 */
 export const GameState = {
