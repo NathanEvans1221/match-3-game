@@ -168,7 +168,7 @@ function init() {
     btnSound?.addEventListener('click', () => {
         audioManager.toggleMute();
         updateSoundBtn();
-        audioManager.init(); // 確保使用者互動後立即解鎖 AudioContext
+        audioManager.init(true); // 確保使用者互動後立即解鎖 AudioContext
     });
 
     // 視窗大小變更（桌面縮放）
@@ -178,7 +178,7 @@ function init() {
 
     // 點擊頁面任何地方先初始化音效 (解決瀏覽器自動播放限制)
     const unlockAudio = () => {
-        if (audioManager.init()) {
+        if (audioManager.init(true)) {
             audioManager.startBGM(); // 解鎖後立即啟動背景音樂
             // 移除所有解鎖監聽器
             ['touchstart', 'mousedown', 'click'].forEach(evt =>

@@ -17,15 +17,23 @@ export class AudioManager {
         this.melodyTimeout = null;
     }
 
-    /** 初始化 AudioContext (需在使用者互動後呼叫) */
-    init() {
+    /** 
+     * 初始化 AudioContext
+     * @param {boolean} force 是否強制建立/恢復 (通常在使用者互動後傳入 true)
+     */
+    init(force = false) {
         try {
+            // 如果還沒有 AudioContext 且不需要強制建立，直接返回目前狀態
             if (!this.audioContext) {
+                if (!force) return false;
                 this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
             }
-            if (this.audioContext.state === 'suspended') {
+
+            // 如果目前是暫停狀態且強制恢復，則進行 resume
+            if (this.audioContext.state === 'suspended' && force) {
                 this.audioContext.resume().catch(() => { });
             }
+
             return this.audioContext.state === 'running';
         } catch (e) {
             return false;
@@ -36,7 +44,7 @@ export class AudioManager {
     startBGM() {
         if (this.muted) return;
 
-        // 如果還沒解鎖（未有手勢），就不執行後續產生物件的操作，避免 console 報錯
+        // 嘗試初始化（不強制，由外部 unlock 手勢負責強制解鎖）
         if (!this.init()) return;
 
         if (this.bgmNode) return;
@@ -125,7 +133,8 @@ export class AudioManager {
 
     /** 播放音效輔助工具 */
     _playSound(freqs, type = 'sine', duration = 0.1, volume = 0.5) {
-        if (this.muted || !this.init()) return;
+        // init(false) 不會觸發警告，如果沒就緒就直接跳過
+        if (this.muted || !this.init(false)) return;
 
         const osc = this.audioContext.createOscillator();
         const gainNode = this.audioContext.createGain();
