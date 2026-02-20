@@ -58,11 +58,11 @@ function init() {
 
         cheerVideo.addEventListener('timeupdate', () => {
             if (cheerState === 'normal') {
-                if (cheerVideo.currentTime >= 2.5) {
+                if (cheerVideo.currentTime >= 2.7) {
                     cheerVideo.currentTime = 1;
                 }
             } else if (cheerState === 'cheer') {
-                if (cheerVideo.currentTime >= 8 || cheerVideo.currentTime < 3) {
+                if (cheerVideo.currentTime >= 8 || cheerVideo.currentTime < 2.7) {
                     // 如果播到 8s，或是因為某些原因時間跳掉
                     cheerState = 'normal';
                     cheerVideo.currentTime = 1;
