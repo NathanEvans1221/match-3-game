@@ -14,23 +14,32 @@ export class AudioManager {
         this.masterVolume = 0.3; // 整體音量
         this.bgmNode = null;
         this.bgmGain = null;
+        this.melodyTimeout = null;
     }
 
     /** 初始化 AudioContext (需在使用者互動後呼叫) */
     init() {
-        if (!this.audioContext) {
-            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        if (this.audioContext.state === 'suspended') {
-            this.audioContext.resume();
+        try {
+            if (!this.audioContext) {
+                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (this.audioContext.state === 'suspended') {
+                this.audioContext.resume().catch(() => { }); // 忽略自動播放限制導致的失敗
+            }
+            return this.audioContext.state === 'running';
+        } catch (e) {
+            return false;
         }
     }
 
     /** 開始播放背景音樂 (簡易合成旋律) */
     startBGM() {
         if (this.muted) return;
-        this.init();
-        if (this.bgmNode) return; // 避免重複播放
+
+        // 如果還沒解鎖（未有手勢），就不執行後續產生物件的操作，避免 console 報錯
+        if (!this.init()) return;
+
+        if (this.bgmNode) return;
 
         // 使用溫和的鋪底音樂 (Pad)
         const oscillator = this.audioContext.createOscillator();
@@ -49,18 +58,17 @@ export class AudioManager {
         this.bgmNode = oscillator;
         this.bgmGain = gainNode;
 
-        // 啟動循環旋律
         this._playMelody();
     }
 
     _playMelody() {
-        if (this.muted || !this.audioContext || !this.bgmNode) return;
+        if (this.muted || !this.audioContext || !this.bgmNode || this.audioContext.state !== 'running') return;
 
         const notes = [261.63, 293.66, 329.63, 392.00, 440.00, 392.00, 329.63, 293.66]; // Pentatonic cycle
         let index = 0;
 
         const playNext = () => {
-            if (this.muted || !this.bgmNode || !this.audioContext) return;
+            if (this.muted || !this.bgmNode || !this.audioContext || this.audioContext.state !== 'running') return;
 
             const freq = notes[index];
             const osc = this.audioContext.createOscillator();
@@ -88,15 +96,15 @@ export class AudioManager {
 
     /** 停止播放背景音樂 */
     stopBGM() {
-        if (this.bgmNode) {
+        if (this.bgmNode && this.audioContext && this.audioContext.state === 'running') {
             this.bgmGain.gain.linearRampToValueAtTime(0, this.audioContext.currentTime + 1);
+            const nodeToStop = this.bgmNode;
             setTimeout(() => {
-                if (this.bgmNode) {
-                    this.bgmNode.stop();
-                    this.bgmNode = null;
-                }
+                try { nodeToStop.stop(); } catch (e) { }
             }, 1000);
         }
+        this.bgmNode = null;
+        this.bgmGain = null;
         if (this.melodyTimeout) {
             clearTimeout(this.melodyTimeout);
             this.melodyTimeout = null;
@@ -115,94 +123,43 @@ export class AudioManager {
         return this.muted;
     }
 
-    /** 播放交換音效 (簡單的短啵聲) */
+    /** 播放音效輔助工具 */
+    _playSound(freqs, type = 'sine', duration = 0.1, volume = 0.5) {
+        if (this.muted || !this.init()) return;
+
+        const osc = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+
+        osc.type = type;
+        osc.frequency.setValueAtTime(freqs[0], this.audioContext.currentTime);
+        if (freqs[1]) {
+            osc.frequency.exponentialRampToValueAtTime(freqs[1], this.audioContext.currentTime + duration);
+        }
+
+        gainNode.gain.setValueAtTime(this.masterVolume * volume, this.audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
+
+        osc.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+
+        osc.start();
+        osc.stop(this.audioContext.currentTime + duration);
+    }
+
     playSwap() {
-        if (this.muted) return;
-        this.init();
-
-        const osc = this.audioContext.createOscillator();
-        const gainNode = this.audioContext.createGain();
-
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(400, this.audioContext.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(600, this.audioContext.currentTime + 0.1);
-
-        gainNode.gain.setValueAtTime(this.masterVolume * 0.5, this.audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.1);
-
-        osc.connect(gainNode);
-        gainNode.connect(this.audioContext.destination);
-
-        osc.start();
-        osc.stop(this.audioContext.currentTime + 0.1);
+        this._playSound([400, 600], 'sine', 0.1, 0.5);
     }
 
-    /** 播放消除音效 (清脆的叮咚聲) */
     playMatch(combo = 1) {
-        if (this.muted) return;
-        this.init();
-
-        const osc = this.audioContext.createOscillator();
-        const gainNode = this.audioContext.createGain();
-
-        // 連鎖越高，音調越高
         const baseFreq = 600 + (combo - 1) * 100;
-
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(baseFreq, this.audioContext.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.5, this.audioContext.currentTime + 0.2);
-
-        gainNode.gain.setValueAtTime(this.masterVolume, this.audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.3);
-
-        osc.connect(gainNode);
-        gainNode.connect(this.audioContext.destination);
-
-        osc.start();
-        osc.stop(this.audioContext.currentTime + 0.3);
+        this._playSound([baseFreq, baseFreq * 1.5], 'triangle', 0.3, 1.0);
     }
 
-    /** 播放掉落音效 (低沉短促聲) */
     playFall() {
-        if (this.muted) return;
-        this.init();
-
-        const osc = this.audioContext.createOscillator();
-        const gainNode = this.audioContext.createGain();
-
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(300, this.audioContext.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(150, this.audioContext.currentTime + 0.1);
-
-        gainNode.gain.setValueAtTime(this.masterVolume * 0.3, this.audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.15);
-
-        osc.connect(gainNode);
-        gainNode.connect(this.audioContext.destination);
-
-        osc.start();
-        osc.stop(this.audioContext.currentTime + 0.15);
+        this._playSound([300, 150], 'sine', 0.15, 0.3);
     }
 
-    /** 播放遊戲結束音效 */
     playGameOver() {
-        if (this.muted) return;
-        this.init();
-
-        const osc = this.audioContext.createOscillator();
-        const gainNode = this.audioContext.createGain();
-
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(400, this.audioContext.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(100, this.audioContext.currentTime + 0.8);
-
-        gainNode.gain.setValueAtTime(this.masterVolume * 0.5, this.audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.8);
-
-        osc.connect(gainNode);
-        gainNode.connect(this.audioContext.destination);
-
-        osc.start();
-        osc.stop(this.audioContext.currentTime + 0.8);
+        this._playSound([400, 100], 'sawtooth', 0.8, 0.5);
     }
 }

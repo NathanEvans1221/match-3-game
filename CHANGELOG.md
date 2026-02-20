@@ -5,7 +5,8 @@
 ## [Unreleased]
 - **音效與背景音樂** (`js/audio.js`, `js/main.js`)：
     - 全新加入 **合成背景音樂 (BGM)**！使用 Web Audio API 即時生成溫和的五聲音階旋律與鋪底音效，無需額外音訊檔即可營造輕鬆氛圍。
-    - 實作 BGM 生命週期管理，支援靜音同步切換與瀏覽器自動播放解鎖。
+    - **自動播放修復**：解決瀏覽器 `AudioContext` 自動播放限制導致的 console 報錯。音樂現在會靜默等待，直到玩家點擊或觸摸頁面後才正式啟動。
+    - 實作 BGM 生命週期管理，支援靜音同步切換與狀態檢查。
 - **效能優化 (Performance Optimization)** (`js/renderer.js`)：
     - **渲染加速**：將 Canvas Context 設為 `alpha: false` 並移除昂貴的 `shadowBlur` 運算，大幅提升低階手機的幀率。
     - **粒子系統重構**：優化粒子更新邏輯與 batch 渲染，並限制最大粒子數量，降低 CPU/GPU 負荷。

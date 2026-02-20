@@ -180,8 +180,13 @@ function init() {
     });
 
     // 點擊頁面任何地方先初始化音效 (解決瀏覽器自動播放限制)
-    document.addEventListener('touchstart', () => audioManager.init(), { once: true });
-    document.addEventListener('mousedown', () => audioManager.init(), { once: true });
+    const unlockAudio = () => {
+        if (audioManager.init()) {
+            audioManager.startBGM(); // 解鎖後立即啟動背景音樂
+        }
+    };
+    document.addEventListener('touchstart', unlockAudio, { once: true });
+    document.addEventListener('mousedown', unlockAudio, { once: true });
 
     // 手機旋轉（延遲確保 innerWidth/innerHeight 已更新）
     window.addEventListener('orientationchange', () => {
