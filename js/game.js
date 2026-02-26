@@ -309,6 +309,7 @@ export class Game {
         this.timerInterval = null;
         this.hintTimer = null;
         this.hintTarget = null;
+        this.isAutoPlaying = false;
 
         // 動畫相關狀態
         this.animating = false;
@@ -329,6 +330,7 @@ export class Game {
         this.removeAnim = null;
         this.fallAnim = null;
         this.hintTarget = null;
+        this.isAutoPlaying = false;
 
         this.callbacks.onScoreUpdate?.(0, true); // reset
         this.callbacks.onComboUpdate?.(0);
@@ -421,6 +423,7 @@ export class Game {
             this.animating = false;
             this.callbacks.onStateChange?.(this.state);
             this._resetHintTimer();
+            if (this.isAutoPlaying) this._triggerAutoMove();
         }
     }
 
@@ -536,6 +539,7 @@ export class Game {
         this._clearTimers();
         this.state = GameState.GAME_OVER;
         this.animating = false;
+        this.isAutoPlaying = false;
         this.callbacks.onStateChange?.(this.state);
         this.callbacks.onGameOver?.();
     }
@@ -568,6 +572,29 @@ export class Game {
     showHint() {
         if (this.animating || this.state === GameState.GAME_OVER) return;
         this.hintTarget = this.board.findHint();
+    }
+
+    /** 切換電腦代玩模式 */
+    toggleAutoPlay() {
+        this.isAutoPlaying = !this.isAutoPlaying;
+        if (this.isAutoPlaying && this.state === GameState.IDLE && !this.animating) {
+            this._triggerAutoMove();
+        }
+        return this.isAutoPlaying;
+    }
+
+    /** 觸發自動移動 */
+    async _triggerAutoMove() {
+        if (!this.isAutoPlaying || this.state !== GameState.IDLE || this.animating) return;
+
+        const hint = this.board.findHint();
+        if (hint) {
+            // 延遲一點點，讓代玩看起來比較像人在點
+            await new Promise(r => setTimeout(r, 600));
+            if (this.isAutoPlaying && this.state === GameState.IDLE) {
+                this._trySwap(hint.r1, hint.c1, hint.r2, hint.c2);
+            }
+        }
     }
 
     /** 銷毀遊戲（清理資源） */

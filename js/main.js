@@ -25,7 +25,8 @@ function init() {
     const btnHint = document.getElementById('btn-hint');
     const btnRestart = document.getElementById('btn-restart');
     const btnRestartOverlay = document.getElementById('btn-restart-overlay');
-    const btnSound = document.getElementById('btn-sound');
+    const btnBgm = document.getElementById('btn-bgm');
+    const btnSfx = document.getElementById('btn-sfx');
     const cheerVideo = document.getElementById('cheer-video');
     // 初始化渲染器
     const renderer = new Renderer(canvas);
@@ -35,17 +36,42 @@ function init() {
 
     // 初始化音效管理器
     const audioManager = new AudioManager();
-    const updateSoundBtn = () => {
-        if (btnSound) {
-            btnSound.innerHTML = audioManager.muted ? '🔇 音效: 關' : '🔊 音效: 開';
-            if (audioManager.muted) {
-                btnSound.classList.remove('active');
+
+    const updateBgmBtn = () => {
+        if (btnBgm) {
+            btnBgm.innerHTML = audioManager.bgmMuted ? '🔇 音樂: 關' : '🎵 音樂: 開';
+            if (audioManager.bgmMuted) {
+                btnBgm.classList.remove('active');
             } else {
-                btnSound.classList.add('active');
+                btnBgm.classList.add('active');
             }
         }
     };
-    updateSoundBtn();
+    const updateSfxBtn = () => {
+        if (btnSfx) {
+            btnSfx.innerHTML = audioManager.sfxMuted ? '🔇 音效: 關' : '🔊 音效: 開';
+            if (audioManager.sfxMuted) {
+                btnSfx.classList.remove('active');
+            } else {
+                btnSfx.classList.add('active');
+            }
+        }
+    };
+    updateBgmBtn();
+    updateSfxBtn();
+
+    // 電腦代玩按鈕 UI 更新
+    const btnAuto = document.getElementById('btn-auto');
+    const updateAutoBtn = () => {
+        if (btnAuto) {
+            btnAuto.innerHTML = game.isAutoPlaying ? '🤖 停止代玩' : '🤖 電腦代玩';
+            if (game.isAutoPlaying) {
+                btnAuto.classList.add('active');
+            } else {
+                btnAuto.classList.remove('active');
+            }
+        }
+    };
 
     // 當前遊戲模式
     let currentMode = 'classic';
@@ -98,6 +124,7 @@ function init() {
             audioManager.playGameOver();
             if (finalScoreEl) finalScoreEl.textContent = scoreManager.getScore();
             if (gameOverOverlay) gameOverOverlay.style.display = 'flex';
+            updateAutoBtn?.();
         },
         onStateChange: (state) => {
             if (state === GameState.SWAPPING) {
@@ -107,6 +134,8 @@ function init() {
             }
         },
     });
+
+    updateAutoBtn();
 
     // 初始化輸入處理
     const inputHandler = new InputHandler(canvas, renderer, ({ row, col }) => {
@@ -130,6 +159,8 @@ function init() {
         if (timerContainer) {
             timerContainer.style.display = mode === 'timed' ? 'flex' : 'none';
         }
+
+        updateAutoBtn?.();
     }
 
     // --- 綁定 UI 按鈕事件 ---
@@ -152,6 +183,13 @@ function init() {
         game.showHint();
     });
 
+    // 電腦代玩按鈕
+    btnAuto?.addEventListener('click', () => {
+        game.toggleAutoPlay();
+        updateAutoBtn();
+        audioManager.init(true);
+    });
+
     // 重新開始按鈕
     btnRestart?.addEventListener('click', () => {
         startGame(currentMode);
@@ -161,11 +199,18 @@ function init() {
         startGame(currentMode);
     });
 
+    // 音樂開關按鈕
+    btnBgm?.addEventListener('click', () => {
+        audioManager.toggleBGM();
+        updateBgmBtn();
+        audioManager.init(true);
+    });
+
     // 音效開關按鈕
-    btnSound?.addEventListener('click', () => {
-        audioManager.toggleMute();
-        updateSoundBtn();
-        audioManager.init(true); // 確保使用者互動後立即解鎖 AudioContext
+    btnSfx?.addEventListener('click', () => {
+        audioManager.toggleSFX();
+        updateSfxBtn();
+        audioManager.init(true);
     });
 
     // 視窗大小變更（桌面縮放）
@@ -173,31 +218,45 @@ function init() {
         renderer.resize();
     });
 
-    // 點擊頁面任何地方先初始化音效與影片 (解決瀏覽器自動播放限制)
-    const unlockAudio = () => {
-        // 使用 force=true 嘗試解鎖
-        audioManager.init(true);
+    const unlockAudio = (e) => {
+        // 取得手勢信任後立即執行解鎖
+        console.log(`User gesture [${e?.type}] detected: Unlocking audio/video`);
 
-        // 延遲一下檢查是否成功（因為 resume 是異步的），或者乾脆直接嘗試啟動音樂
-        // 即使 init() 暫時回傳 false，如果在觸發事件內呼叫了 resume，後續播放就會生效
-        audioManager.startBGM();
-
-        // 同時嘗試解鎖影片播放
+        // 1. 處理影片 (強制靜音播放)
         if (cheerVideo) {
-            cheerVideo.currentTime = 1;
-            cheerVideo.play().catch(() => { });
+            cheerVideo.muted = true; // 強制保持靜音
+            cheerVideo.play().then(() => {
+                console.log("Video playing muted.");
+                cheerVideo.currentTime = 1;
+            }).catch(err => {
+                console.warn("Video play failed:", err);
+            });
         }
 
-        // 移除所有解鎖監聽器
-        ['touchstart', 'mousedown'].forEach(evt =>
-            window.removeEventListener(evt, unlockAudio, true)
-        );
+        // 2. 解鎖 AudioContext (建立與 resume)
+        const success = audioManager.init(true);
+
+        // 3. 嘗試啟動 BGM (不再延遲，確保在同一個事件週中)
+        if (success && !audioManager.bgmNode && !audioManager.bgmMuted) {
+            audioManager.startBGM();
+        }
+
+        // 移除監聽器
+        ['click', 'touchend', 'pointerup'].forEach(evt => {
+            window.removeEventListener(evt, unlockAudio, { capture: true });
+            btnClassic?.removeEventListener(evt, unlockAudio, { capture: true });
+            btnTimed?.removeEventListener(evt, unlockAudio, { capture: true });
+        });
     };
 
-    // 使用 capture: true 確保在 Canvas 的 InputHandler 執行前就先觸發音訊解鎖
-    ['touchstart', 'mousedown'].forEach(evt =>
-        window.addEventListener(evt, unlockAudio, { capture: true, once: false })
-    );
+    // 使用 capture: true 確保在所有地方都能攔截到手勢
+    // 注意：touchstart 常常不被當作有效的使用者手勢，改用 touchend / pointerup / click
+    ['click', 'touchend', 'pointerup'].forEach(evt => {
+        window.addEventListener(evt, unlockAudio, { capture: true, once: true });
+        // 針對模式按鈕加強監聽 (防止點擊按鈕時 event 被 stopPropagation)
+        btnClassic?.addEventListener(evt, unlockAudio, { capture: true, once: true });
+        btnTimed?.addEventListener(evt, unlockAudio, { capture: true, once: true });
+    });
 
     // 手機旋轉（延遲確保 innerWidth/innerHeight 已更新）
     window.addEventListener('orientationchange', () => {

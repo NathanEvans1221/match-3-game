@@ -398,6 +398,12 @@ body {
     color: var(--text-secondary);
 }
 
+.btn-secondary.active {
+    color: var(--accent-cyan);
+    border-color: rgba(0, 229, 255, 0.3);
+    background: rgba(0, 229, 255, 0.05);
+}
+
 /* ---------- 桌面端 hover 效果（手機無 hover） ---------- */
 @media (hover: hover) {
     .score-item:hover {

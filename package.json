@@ -1,0 +1,12 @@
+{
+  "name": "match-3-game",
+  "version": "0.2.0",
+  "description": "波妞消消樂",
+  "scripts": {
+    "dev": "npx wrangler pages dev .",
+    "serve": "npx serve ."
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}

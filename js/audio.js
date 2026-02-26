@@ -7,9 +7,12 @@ export class AudioManager {
     constructor() {
         this.audioContext = null;
 
-        // 從 localStorage 讀取音效設定，預設為開啟
-        const savedMute = localStorage.getItem('match3_mute');
-        this.muted = savedMute === 'true';
+        // 從 localStorage 讀取設定，預設為開啟
+        const savedBgmMute = localStorage.getItem('match3_bgm_muted');
+        const savedSfxMute = localStorage.getItem('match3_sfx_muted');
+
+        this.bgmMuted = savedBgmMute === 'true';
+        this.sfxMuted = savedSfxMute === 'true';
 
         this.masterVolume = 0.3; // 整體音量
         this.bgmNode = null;
@@ -28,20 +31,21 @@ export class AudioManager {
         if (!this.supported) return false;
 
         try {
-            // 延遲建立 AudioContext，直到真的需要（或首次手勢）
+            // 只在明確手勢下建立 context
             if (!this.audioContext && force) {
                 this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
             }
 
             if (!this.audioContext) return false;
 
-            // 如果是手勢呼叫且狀態為暫停，嘗試恢復
+            // 如果是被暫停中且有手勢觸發，嘗試恢復
             if (force && this.audioContext.state === 'suspended') {
-                // 這裡的 Promise 不等待，因為解鎖是異步的
+                // 不直接在 init 回傳 resume 的 promise，避免同步阻塞
                 this.audioContext.resume().catch(() => { });
+                return true;
             }
 
-            return this.audioContext.state === 'running';
+            return this.audioContext.state === 'running' || this.audioContext.state === 'suspended';
         } catch (e) {
             return false;
         }
@@ -49,7 +53,7 @@ export class AudioManager {
 
     /** 開始播放背景音樂 */
     startBGM() {
-        if (this.muted || !this.supported) return;
+        if (this.bgmMuted || !this.supported) return;
 
         // 檢查狀態，若未就緒則跳過（由外部手勢邏輯負責解鎖）
         if (!this.init()) return;
@@ -76,13 +80,13 @@ export class AudioManager {
     }
 
     _playMelody() {
-        if (this.muted || !this.audioContext || this.audioContext.state !== 'running') return;
+        if (this.bgmMuted || !this.audioContext || this.audioContext.state !== 'running') return;
 
         const notes = [261.63, 293.66, 329.63, 392.00, 440.00, 392.00, 329.63, 293.66];
         let index = 0;
 
         const playNext = () => {
-            if (this.muted || !this.bgmNode || !this.audioContext || this.audioContext.state !== 'running') return;
+            if (this.bgmMuted || !this.bgmNode || !this.audioContext || this.audioContext.state !== 'running') return;
 
             const freq = notes[index];
             const osc = this.audioContext.createOscillator();
@@ -126,19 +130,25 @@ export class AudioManager {
         }
     }
 
-    toggleMute() {
-        this.muted = !this.muted;
-        localStorage.setItem('match3_mute', this.muted);
-        if (this.muted) {
+    toggleBGM() {
+        this.bgmMuted = !this.bgmMuted;
+        localStorage.setItem('match3_bgm_muted', this.bgmMuted);
+        if (this.bgmMuted) {
             this.stopBGM();
         } else {
             this.startBGM();
         }
-        return this.muted;
+        return this.bgmMuted;
+    }
+
+    toggleSFX() {
+        this.sfxMuted = !this.sfxMuted;
+        localStorage.setItem('match3_sfx_muted', this.sfxMuted);
+        return this.sfxMuted;
     }
 
     _playSound(freqs, type = 'sine', duration = 0.1, volume = 0.5) {
-        if (this.muted || !this.init()) return;
+        if (this.sfxMuted || !this.init()) return;
 
         try {
             const osc = this.audioContext.createOscillator();
@@ -169,3 +179,4 @@ export class AudioManager {
     playFall() { this._playSound([300, 150], 'sine', 0.15, 0.3); }
     playGameOver() { this._playSound([400, 100], 'sawtooth', 0.8, 0.5); }
 }
+

@@ -182,8 +182,8 @@ export class Renderer {
         }
 
         if (game.hintTarget) {
-            this.hintPhase += 0.05;
-            const hintAlpha = 0.3 + Math.sin(this.hintPhase) * 0.3;
+            this.hintPhase += 0.08;
+            const hintAlpha = 0.4 + Math.sin(this.hintPhase) * 0.4;
             this._drawHint(ctx, game.hintTarget.r1, game.hintTarget.c1, hintAlpha);
             this._drawHint(ctx, game.hintTarget.r2, game.hintTarget.c2, hintAlpha);
         }
@@ -264,11 +264,27 @@ export class Renderer {
     _drawHint(ctx, row, col, alpha) {
         const x = col * this.cellSize;
         const y = row * this.cellSize;
+
         ctx.save();
-        ctx.strokeStyle = `rgba(255, 215, 0, ${alpha})`;
-        ctx.lineWidth = 3;
-        this._roundRectPath(ctx, x + 4, y + 4, this.cellSize - 8, this.cellSize - 8, 10);
+
+        // 外部強力金色發光
+        ctx.shadowColor = 'rgba(255, 215, 0, 0.8)';
+        ctx.shadowBlur = 20 * (alpha + 0.5);
+        ctx.strokeStyle = `rgba(255, 215, 0, ${alpha + 0.2})`;
+        ctx.lineWidth = 6;
+
+        // 縮放脈動動畫
+        const s = 6 + Math.sin(this.hintPhase * 1.5) * 3;
+        this._roundRectPath(ctx, x + s, y + s, this.cellSize - s * 2, this.cellSize - s * 2, 12);
         ctx.stroke();
+
+        // 內部白色強光線
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = `rgba(255, 255, 255, ${alpha + 0.3})`;
+        ctx.lineWidth = 2;
+        this._roundRectPath(ctx, x + s + 3, y + s + 3, this.cellSize - (s + 3) * 2, this.cellSize - (s + 3) * 2, 10);
+        ctx.stroke();
+
         ctx.restore();
     }
 
