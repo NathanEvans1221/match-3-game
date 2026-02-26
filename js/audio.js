@@ -63,11 +63,12 @@ export class AudioManager {
         const oscillator = this.audioContext.createOscillator();
         const gainNode = this.audioContext.createGain();
 
-        oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(110, this.audioContext.currentTime);
+        // 使用較輕快的三角波作為基底背景音
+        oscillator.type = 'triangle';
+        oscillator.frequency.setValueAtTime(130.81, this.audioContext.currentTime); // C3
 
         gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
-        gainNode.gain.linearRampToValueAtTime(this.masterVolume * 0.15, this.audioContext.currentTime + 3);
+        gainNode.gain.linearRampToValueAtTime(this.masterVolume * 0.05, this.audioContext.currentTime + 2); // 音量放低，當作鋪底
 
         oscillator.connect(gainNode);
         gainNode.connect(this.audioContext.destination);
@@ -82,31 +83,66 @@ export class AudioManager {
     _playMelody() {
         if (this.bgmMuted || !this.audioContext || this.audioContext.state !== 'running') return;
 
-        const notes = [261.63, 293.66, 329.63, 392.00, 440.00, 392.00, 329.63, 293.66];
+        // 快節奏的 8-bit 風格旋律 (C大調: C - F - G - C)
+        const notes = [
+            // 小節 1 (C Major)
+            523.25, 392.00, 329.63, 261.63, 523.25, 392.00, 329.63, 261.63,
+            // 小節 2 (F Major)
+            698.46, 523.25, 440.00, 349.23, 698.46, 523.25, 440.00, 349.23,
+            // 小節 3 (G Major)
+            783.99, 587.33, 493.88, 392.00, 783.99, 587.33, 493.88, 392.00,
+            // 小節 4 (C Major 結尾向上)
+            523.25, 659.25, 783.99, 1046.50, 783.99, 659.25, 523.25, 392.00
+        ];
+
         let index = 0;
+        // 定義快節奏：每 150ms 播放一個音符 (大約 100 BPM 16分音符)
+        const noteDurationMs = 150;
 
         const playNext = () => {
             if (this.bgmMuted || !this.bgmNode || !this.audioContext || this.audioContext.state !== 'running') return;
 
             const freq = notes[index];
+
+            // 1. 主旋律 (輕快晶片感)
             const osc = this.audioContext.createOscillator();
             const g = this.audioContext.createGain();
 
-            osc.type = 'sine';
+            osc.type = 'square'; // 使用方波讓它更有電玩復古感
             osc.frequency.setValueAtTime(freq, this.audioContext.currentTime);
 
+            // 快速起伏的音量包絡
             g.gain.setValueAtTime(0, this.audioContext.currentTime);
-            g.gain.linearRampToValueAtTime(this.masterVolume * 0.08, this.audioContext.currentTime + 0.1);
-            g.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 2.0);
+            g.gain.linearRampToValueAtTime(this.masterVolume * 0.08, this.audioContext.currentTime + 0.01);
+            g.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.12);
 
             osc.connect(g);
             g.connect(this.audioContext.destination);
 
             osc.start();
-            osc.stop(this.audioContext.currentTime + 2.0);
+            osc.stop(this.audioContext.currentTime + 0.15);
+
+            // 2. 伴奏低音：每逢重拍 (偶數拍) 加上打擊感較強的低音
+            if (index % 2 === 0) {
+                const bassOsc = this.audioContext.createOscillator();
+                const bassGain = this.audioContext.createGain();
+
+                bassOsc.type = 'triangle'; // 低音用三角波避免高頻刺耳
+                bassOsc.frequency.setValueAtTime(freq / 4, this.audioContext.currentTime); // 低兩個八度
+
+                bassGain.gain.setValueAtTime(0, this.audioContext.currentTime);
+                bassGain.gain.linearRampToValueAtTime(this.masterVolume * 0.1, this.audioContext.currentTime + 0.01);
+                bassGain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.1);
+
+                bassOsc.connect(bassGain);
+                bassGain.connect(this.audioContext.destination);
+
+                bassOsc.start();
+                bassOsc.stop(this.audioContext.currentTime + 0.15);
+            }
 
             index = (index + 1) % notes.length;
-            this.melodyTimeout = setTimeout(playNext, 1500);
+            this.melodyTimeout = setTimeout(playNext, noteDurationMs);
         };
 
         playNext();
