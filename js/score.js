@@ -12,11 +12,13 @@ export class ScoreManager {
      * @param {HTMLElement} scoreEl 當前分數顯示元素
      * @param {HTMLElement} highScoreEl 最高分顯示元素
      * @param {HTMLElement} comboEl 連鎖數顯示元素
+     * @param {HTMLElement} comboMultiplierEl 連鎖倍率顯示元素
      */
-    constructor(scoreEl, highScoreEl, comboEl) {
+    constructor(scoreEl, highScoreEl, comboEl, comboMultiplierEl) {
         this.scoreEl = scoreEl;
         this.highScoreEl = highScoreEl;
         this.comboEl = comboEl;
+        this.comboMultiplierEl = comboMultiplierEl;
         this.currentScore = 0;
         this.highScore = this._loadHighScore();
 
@@ -71,6 +73,29 @@ export class ScoreManager {
             if (combo > 1) {
                 this._popAnimation(this.comboEl);
             }
+        }
+        if (this.comboMultiplierEl) {
+            this._updateComboMultiplier(combo);
+        }
+    }
+
+    /** 更新 combo 倍率顯示 */
+    _updateComboMultiplier(combo) {
+        const multiplierEl = this.comboMultiplierEl;
+        if (combo <= 1) {
+            multiplierEl.textContent = '';
+            multiplierEl.classList.remove('show', 'high', 'amazing');
+            return;
+        }
+        const multiplier = Math.pow(1.5, combo - 1);
+        multiplierEl.textContent = `x${multiplier.toFixed(2)}`;
+        multiplierEl.classList.remove('show', 'high', 'amazing');
+        void multiplierEl.offsetWidth;
+        multiplierEl.classList.add('show');
+        if (combo >= 5) {
+            setTimeout(() => multiplierEl.classList.add('amazing'), 50);
+        } else if (combo >= 3) {
+            setTimeout(() => multiplierEl.classList.add('high'), 50);
         }
     }
 

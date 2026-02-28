@@ -16,6 +16,7 @@ function init() {
     const scoreEl = document.getElementById('current-score');
     const highScoreEl = document.getElementById('high-score');
     const comboEl = document.getElementById('combo-count');
+    const comboMultiplierEl = document.getElementById('combo-multiplier');
     const timerContainer = document.getElementById('timer-container');
     const timerEl = document.getElementById('timer');
     const gameOverOverlay = document.getElementById('game-over-overlay');
@@ -32,7 +33,7 @@ function init() {
     const renderer = new Renderer(canvas);
 
     // 初始化計分管理器
-    const scoreManager = new ScoreManager(scoreEl, highScoreEl, comboEl);
+    const scoreManager = new ScoreManager(scoreEl, highScoreEl, comboEl, comboMultiplierEl);
 
     // 初始化音效管理器
     const audioManager = new AudioManager();
