@@ -32,19 +32,21 @@ export class Board {
         this.generateBoard();
     }
 
-    /** 隨機生成棋盤，確保初始狀態無三消 */
+    /** 隨機生成棋盤，確保初始狀態無三消且有可消除步驟 */
     generateBoard() {
-        this.grid = [];
-        for (let r = 0; r < this.size; r++) {
-            this.grid[r] = [];
-            for (let c = 0; c < this.size; c++) {
-                let type;
-                do {
-                    type = this._randomType();
-                } while (this._wouldMatch(r, c, type));
-                this.grid[r][c] = type;
+        do {
+            this.grid = [];
+            for (let r = 0; r < this.size; r++) {
+                this.grid[r] = [];
+                for (let c = 0; c < this.size; c++) {
+                    let type;
+                    do {
+                        type = this._randomType();
+                    } while (this._wouldMatch(r, c, type));
+                    this.grid[r][c] = type;
+                }
             }
-        }
+        } while (!this.hasValidMoves());
     }
 
     /** 生成隨機寶石類型 (1 ~ types) */
@@ -417,7 +419,16 @@ export class Game {
 
         // 檢查是否還有可用步驟
         if (!this.board.hasValidMoves()) {
-            this._gameOver();
+            // 無法消除，重新生成棋盤直到有可用步驟
+            this.board.generateBoard();
+            this.callbacks.onScoreUpdate?.(0, true);
+            this.combo = 0;
+            this.callbacks.onComboUpdate?.(0);
+            this.state = GameState.IDLE;
+            this.animating = false;
+            this.callbacks.onStateChange?.(this.state);
+            this._resetHintTimer();
+            if (this.isAutoPlaying) this._triggerAutoMove();
         } else {
             this.state = GameState.IDLE;
             this.animating = false;
