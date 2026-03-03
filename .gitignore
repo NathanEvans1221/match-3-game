@@ -12,3 +12,6 @@ setup_git_sync.ps1
 wrangler.jsonc
 .opencode/
 .wrangler/
+
+.python-version
+
